@@ -1,0 +1,52 @@
+# Tên của Pipeline hiển thị trên GitHub
+name: PR Quality Check
+
+# KÍCH HOẠT (TRIGGER): Pipeline này chạy khi nào?
+on:
+  # 1. Khi có Pull Request (PR) xin nhập code vào nhánh main
+  pull_request:
+    branches: [ "main" ]
+  # 2. Hoặc khi bạn muốn chạy thử thủ công (để test pipeline)
+  workflow_dispatch:
+
+# CÔNG VIỆC (JOBS): Danh sách các việc cần làm
+jobs:
+  # Đặt tên job là "check-code"
+  check-code:
+    name: Lint & Unit Test
+    # MÁY CHẠY (RUNNER): Mượn máy Ubuntu mới nhất của GitHub để chạy
+    runs-on: ubuntu-latest
+    
+    # CÁC BƯỚC THỰC HIỆN (STEPS)
+    steps:
+      # Bước 1: Lấy code từ kho Git về máy Ubuntu này
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt môi trường Java (Android cần Java)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Bước 3: Cài đặt Flutter vào máy Ubuntu
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0' # <-- Đổi version khớp với dự án của bạn
+          channel: 'stable'
+          cache: true # Bật cache để lần sau chạy nhanh hơn
+
+      # Bước 4: Tải các thư viện (packages) về
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # Bước 5: Kiểm tra code xấu (Linting)
+      # Lệnh này sẽ soi lỗi cú pháp, biến không dùng, code sai convention
+      - name: Analyze Code
+        run: flutter analyze
+
+      # Bước 6: Chạy Unit Test (Nếu có)
+      - name: Run Unit Tests
+        run: flutter test
